@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .dashboard-tile {
+            color: #fff;
+            text-align: center;
+            padding: 40px;
+            border-radius: 10px;
+            font-size: 20px;
+            transition: transform 0.3s ease;
+        }
+        .dashboard-tile:hover {
+            transform: scale(1.05);
+        }
+        .tile-1 { background-color: #f39c12; } /* Orange */
+        .tile-2 { background-color: #3498db; } /* Blue */
+        .tile-3 { background-color: #e74c3c; } /* Red */
+        .tile-4 { background-color: #2ecc71; } /* Green */
+        .tile-5 { background-color: #9b59b6; } /* Purple */
+        .tile-6 { background-color: #16a085; } /* Teal */
+        a { text-decoration: none; color: #fff; }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h2 class="text-center mb-4">Dashboard</h2>
+        <div class="row">
+            <!-- Tile 1 -->
+            <div class="col-md-4 mb-4">
+                <div class="dashboard-tile tile-1">
+                    <a href="manage_clubs.html">Manage Clubs</a>
+                </div>
+            </div>
+
+            <!-- Tile 2 -->
+            <div class="col-md-4 mb-4">
+                <div class="dashboard-tile tile-2">
+                    <a href="manage_users.html">Manage Users</a>
+                </div>
+            </div>
+
+            <!-- Tile 3 -->
+            <div class="col-md-4 mb-4">
+                <div class="dashboard-tile tile-3">
+                    <a href="view_events.html">View Events</a>
+                </div>
+            </div>
+
+            <!-- Tile 4 -->
+            <div class="col-md-4 mb-4">
+                <div class="dashboard-tile tile-4">
+                    <a href="create_event.html">Create Event</a>
+                </div>
+            </div>
+
+            <!-- Tile 5 -->
+            <div class="col-md-4 mb-4">
+                <div class="dashboard-tile tile-5">
+                    <a href="reports.html">View Reports</a>
+                </div>
+            </div>
+
+            <!-- Tile 6 -->
+            <div class="col-md-4 mb-4">
+                <div class="dashboard-tile tile-6">
+                    <a href="profile.html">Profile</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
