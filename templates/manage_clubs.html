@@ -7,13 +7,19 @@
 </head>
 <body>
 <div class="container">
-    <h2 class="my-4">Manage Clubs</h2>
+    
+    <div class="float-right mb-4">
+        {% if session['user']['role'] == 'admin' %}
+          <button type="button" class="btn btn-primary" id="createNewEventBtn">Add New Club</button>
+        {% endif %}
+      </div>
 
+    <h2 class="my-4">Manage Clubs</h2>
+    
     <!-- Club List Section -->
     <table class="table table-striped">
         <thead>
             <tr>
-                <th>Club ID</th>
                 <th>Club Name</th>
                 <th>Description</th>
                 <th>Leaders</th>
@@ -23,7 +29,6 @@
         <tbody id="club-list">
             {% for club in clubs %}
             <tr>
-                <td>{{ club['club_id'] }}</td>
                 <td>{{ club['club_name'] }}</td>
                 <td>{{ club['description'] }}</td>
                 <td>{{ club['leaders'] }}</td>
@@ -36,6 +41,8 @@
         </tbody>
     </table>
 
+    <div id="newEventForm" style="display: none;">
+    {% if session['user']['role'] ==  'admin' %}
     <!-- Add New Club Form with Leader Assignment -->
     <h4>Add New Club</h4>
     <form id="add-club-form" action="/add_club" method="post">
@@ -58,8 +65,17 @@
         </div>
         <button type="submit" class="btn btn-success">Add Club</button>
     </form>
+    {% endif %}
+</div>
 </div>
 <script>
+    const createNewEventBtn = document.getElementById('createNewEventBtn');
+    const newEventForm = document.getElementById('newEventForm');
+
+    createNewEventBtn.addEventListener('click', function() {
+      newEventForm.style.display = (newEventForm.style.display === 'none') ? 'block' : 'none';
+    });
+
     function editClub(club_id) {
         window.location.href = `/edit_club/${club_id}`;
     }

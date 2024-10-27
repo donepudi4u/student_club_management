@@ -1,71 +1,106 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Club Details</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <meta charset="UTF-8">
+  <title>Club Details</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
 </head>
 <body>
-<div class="container">
-    <h2 class="my-4">{{ club.club_name }} Details</h2>
+  <div class="container">
+  {{user.role}}
+    <div class="float-right mb-4">
+      {% if user.role == 'club_leader' %}
+        <button type="button" class="btn btn-primary" id="createNewEventBtn">Create New Event</button>
+      {% endif %}
+    </div>
     
+    <h2 class="my-4">{{ club.club_name }} Details</h2>
+
     <h4>Members</h4>
     <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Phone</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for member in members %}
-            <tr>
-                <td>{{ member.username }}</td>
-                <td>{{ member.email }}</td>
-                <td>{{ member.phone }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Phone</th>
+          {% if session['user']['role'] ==  'club_leader' %}
+            <th>Edit</th>
+            <th>Delete</th>
+          {% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for member in members %}
+          <tr>
+            <td>{{ member.name }}</td>
+            <td>{{ member.email }}</td>
+            <td>{{ member.phone_number }}</td>
+            {% if session['user']['role'] == 'club_leader' %}
+              <td><a href="/edit_member/{{ member.id }}">Edit</a></td>
+              <td><a href="/delete_member/{{ member.id }}">Delete</a></td>
+            {% endif %}
+          </tr>
+        {% endfor %}
+      </tbody>
     </table>
 
     <h4 class="mt-4">Events</h4>
     <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>Event Name</th>
-                <th>Description</th>
-                <th>Date</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for event in events %}
-            <tr>
-                <td>{{ event.event_name }}</td>
-                <td>{{ event.description }}</td>
-                <td>{{ event.event_date }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
+      <thead>
+        <tr>
+          <th>Event Name</th>
+          <th>Description</th>
+          <th>Date</th>
+          {% if user.role == 'club_leader' %}
+            <th>Edit</th>
+            <th>Delete</th>
+          {% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for event in events %}
+          <tr>
+            <td>{{ event.event_name }}</td>
+            <td>{{ event.description }}</td>
+            <td>{{ event.event_date }}</td>
+            {% if session['user']['role'] ==  'club_leader' %}
+              <td><a href="/edit_event/{{ event.id }}">Edit</a></td>
+              <td><a href="/delete_event/{{ event.id }}">Delete</a></td>
+            {% endif %}
+          </tr>
+        {% endfor %}
+      </tbody>
     </table>
 
-    <!-- Form to add new event -->
-    <h4 class="mt-4">Create New Event</h4>
-    <form action="/add_event/{{ club.club_id }}" method="POST">
-        <div class="form-group">
+    <div id="newEventForm" style="display: none;">
+      {% if session['user']['role'] ==  'club_leader' %}
+        <h4 class="mt-4">Create New Event</h4>
+        <form action="/add_event/{{ club.club_id }}" method="POST">
+          <div class="form-group">
             <label>Event Name</label>
             <input type="text" class="form-control" name="event_name" required>
-        </div>
-        <div class="form-group">
+          </div>
+          <div class="form-group">
             <label>Description</label>
             <textarea class="form-control" name="description" required></textarea>
-        </div>
-        <div class="form-group">
+          </div>
+          <div class="form-group">
             <label>Event Date</label>
             <input type="date" class="form-control" name="event_date" required>
-        </div>
-        <button type="submit" class="btn btn-success">Add Event</button>
-    </form>
-</div>
+          </div>
+          <button type="submit" class="btn btn-success">Add Event</button>
+        </form>
+      {% endif %}
+    </div>
+  </div>
+  
+  <script>
+    const createNewEventBtn = document.getElementById('createNewEventBtn');
+    const newEventForm = document.getElementById('newEventForm');
+
+    createNewEventBtn.addEventListener('click', function() {
+      newEventForm.style.display = (newEventForm.style.display === 'none') ? 'block' : 'none';
+    });
+  </script>
 </body>
 </html>

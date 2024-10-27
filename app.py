@@ -1,6 +1,8 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from flask_mysql_connector import MySQL
 from werkzeug.security import generate_password_hash, check_password_hash
+# from User import User
+
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
@@ -57,26 +59,29 @@ def login():
         # Fetch the user from the database
         conn = mysql.connection
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
-        user = cursor.fetchone()
+        cursor.execute("SELECT * FROM Users WHERE email = %s AND password = %s", (email, password))
+        user_data = cursor.fetchone()
         cursor.close()
 
-        # Validate the login credentials
-        if user and check_password_hash(user[6], password):
-            session['id'] = user[0]
-            session['user_id'] = user[1]
-            session['username'] = user[2]
-            session['role'] = user[7]
 
+        # Validate the login credentials
+        if user_data :
+            session['user'] = {
+                'id': user_data[0],
+                'name': user_data[1],
+                'email': user_data[3],
+                'role': user_data[7],
+                'roll_number': user_data[2],
+                'phone_number': user_data[4]
+            }
+            print(user_data[7])
             flash('Login successful!')
-            
-            
-            # Redirect based on user role
-            if user[7] == 'admin':
+            # Redirect to the respective dashboard based on role
+            if user_data[7] == 'admin':
                 return redirect('/admin_dashboard')
-            elif user[7] == 'club_leader':
+            elif user_data[7] == 'club_leader':
                 return redirect('/leader_dashboard')
-            else:
+            elif user_data[7] == 'student':
                 return redirect('/student_dashboard')
         else:
             flash('Invalid credentials. Please try again.')
@@ -140,8 +145,9 @@ def join_club(club_id):
 # Admin dashboard route
 @app.route('/admin_dashboard')
 def admin_dashboard():
-    if 'user_id' in session and session['role'] == 'admin':
-        return render_template('admin_dashboard.html', username=session['username'])
+    print(session['user']['role'])
+    if session['user']['role'] == 'admin':
+        return render_template('admin_dashboard.html', username=session['user']['name'])
     else:
         flash('You are not authorized to view this page.')
         return redirect('/')
@@ -172,6 +178,8 @@ def club_details(club_id):
     conn = mysql.connection
     cursor = conn.cursor(dictionary=True)
     
+    user = session['user'] 
+
     # Get club details and members
     cursor.execute("SELECT * FROM clubs WHERE club_id = %s", (club_id,))
     club = cursor.fetchone()
@@ -189,7 +197,7 @@ def club_details(club_id):
     
     cursor.close()
     conn.close()
-    return render_template('club_details.html', club=club, members=members, events=events)
+    return render_template('club_details.html', club=club, members=members, events=events, user=user)
 
 # Add event under club
 @app.route('/add_event/<int:club_id>', methods=['POST'])
