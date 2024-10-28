@@ -6,10 +6,43 @@
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
 </head>
 <body>
+  {% extends "base.html" %}
+ {% block title %}
+    Admin Dashboard
+ {% endblock %}
+
+ {% block content %}
+
+ {% if session['user']['role'] == 'student' %}
+<button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#leaveClubModal">
+    Leave Club
+</button>
+
+<!-- Leave Club Modal -->
+<div class="modal fade" id="leaveClubModal" tabindex="-1" aria-labelledby="leaveClubModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="leaveClubModalLabel">Leave Club</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>Are you sure you want to leave this club?</p>
+      </div>
+      <div class="modal-footer">
+        <form action="/leave_club" method="POST">
+          <input type="hidden" name="club_id" value="{{ club['club_id'] }}">
+          <button type="submit" class="btn btn-danger">Leave Club</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
   <div class="container">
-  {{user.role}}
     <div class="float-right mb-4">
-      {% if user.role == 'club_leader' %}
+      {% if user.role == 'club_leader' and session['user']['id'] == clubLeader['user_id'] %}
         <button type="button" class="btn btn-primary" id="createNewEventBtn">Create New Event</button>
       {% endif %}
     </div>
@@ -23,7 +56,7 @@
           <th>Name</th>
           <th>Email</th>
           <th>Phone</th>
-          {% if session['user']['role'] ==  'club_leader' %}
+          {% if session['user']['role'] ==  'club_leader' and session['user']['id'] == clubLeader['user_id'] %}
             <th>Edit</th>
             <th>Delete</th>
           {% endif %}
@@ -35,7 +68,7 @@
             <td>{{ member.name }}</td>
             <td>{{ member.email }}</td>
             <td>{{ member.phone_number }}</td>
-            {% if session['user']['role'] == 'club_leader' %}
+            {% if session['user']['role'] == 'club_leader' and session['user']['id'] == clubLeader['user_id'] %}
               <td><a href="/edit_member/{{ member.id }}">Edit</a></td>
               <td><a href="/delete_member/{{ member.id }}">Delete</a></td>
             {% endif %}
@@ -51,7 +84,7 @@
           <th>Event Name</th>
           <th>Description</th>
           <th>Date</th>
-          {% if user.role == 'club_leader' %}
+          {% if user.role == 'club_leader' and session['user']['id'] == clubLeader['user_id'] %}
             <th>Edit</th>
             <th>Delete</th>
           {% endif %}
@@ -63,7 +96,7 @@
             <td>{{ event.event_name }}</td>
             <td>{{ event.description }}</td>
             <td>{{ event.event_date }}</td>
-            {% if session['user']['role'] ==  'club_leader' %}
+            {% if session['user']['role'] ==  'club_leader' and session['user']['id'] == clubLeader['user_id'] %}
               <td><a href="/edit_event/{{ event.id }}">Edit</a></td>
               <td><a href="/delete_event/{{ event.id }}">Delete</a></td>
             {% endif %}
@@ -73,7 +106,7 @@
     </table>
 
     <div id="newEventForm" style="display: none;">
-      {% if session['user']['role'] ==  'club_leader' %}
+      {% if session['user']['role'] ==  'club_leader' and session['user']['id'] == clubLeader['user_id'] %}
         <h4 class="mt-4">Create New Event</h4>
         <form action="/add_event/{{ club.club_id }}" method="POST">
           <div class="form-group">
@@ -102,5 +135,6 @@
       newEventForm.style.display = (newEventForm.style.display === 'none') ? 'block' : 'none';
     });
   </script>
+  {% endblock %}
 </body>
 </html>

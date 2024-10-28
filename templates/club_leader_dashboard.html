@@ -6,32 +6,85 @@
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <style>
         .club-tile {
-            background-color: #f8f9fa;
+            background-color: #77b0e9;
             border-radius: 5px;
             padding: 20px;
             text-align: center;
             margin-bottom: 20px;
             cursor: pointer;
         }
+        .club-tile h3 {
+           margin-bottom: 0.5em;
+        }
+        .club-link {
+            display: inline-block;
+            margin-top: 1em;
+            background-color: #28a745;
+            color: white;
+            padding: 0.5em 1em;
+            text-decoration: none;
+            border-radius: 4px;
+        }
         .club-tile:hover {
-            background-color: #e9ecef;
+            background-color: #79b0e7;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h2 class="my-4">Leader Dashboard</h2>
+    {% extends "base.html" %}
+ {% block title %}
+    Admin Dashboard
+ {% endblock %}
 
-        <div class="row">
-            {% for club in clubs %}
-            <div class="col-md-4">
-                <div class="club-tile" onclick="window.location.href='/club_details/{{ club.club_id }}'">
-                    <h3>{{ club.club_name }}</h3>
-                    <p>{{ club.description }}</p>
+ {% block content %}
+    <div class="container">
+        <center> <h1>Welcome, Club Leader!</h1></center>
+
+        
+            <h2>Clubs You Are Managing</h2>
+            <div class="row">
+                {% for club in clubs %}
+                <div class="col-md-4">
+                    <div class="club-tile" onclick="window.location.href='/club_details/{{ club.club_id }}'">
+                        <h3>{{ club.club_name }}</h3>
+                        <p>{{ club.description }}</p>
+                    </div>
                 </div>
+                {% endfor %}
             </div>
-            {% endfor %}
-        </div>
+        
+    <!-- Section for Clubs the Leader is a Member of -->
+         
+            <h2>Clubs You Are a Member Of</h2>
+            <div class="row">
+                {% for club in member_clubs %}
+                <div class="col-md-4">
+                    <div class="club-tile" onclick="window.location.href='/club_details/{{ club.club_id }}'">
+                        <h3>{{ club.club_name }}</h3>
+                        <p>{{ club.description }}</p>                        
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        
+
+
+        <!-- Section for Other Clubs to Join -->
+        <h2>Other Clubs Available</h2>
+            <div class="row">
+                {% for club in other_clubs %}
+                <div class="col-md-4">
+                    <div class="club-tile" onclick="window.location.href='/club_details/{{ club.club_id }}'">
+                        <h3>{{ club.club_name }}</h3>
+                        <p>{{ club.description }}</p>
+                        <button class="btn btn-primary" onclick="window.location.href='/join_club/{{ club.club_id }}'">Join Club</button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+
     </div>
+    {% endblock %}
 </body>
 </html>

@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from flask_mysql_connector import MySQL
-from werkzeug.security import generate_password_hash, check_password_hash
+
 # from User import User
 
 
@@ -32,7 +32,7 @@ def register():
         communication_preference = request.form['communicationPreference']
         password = request.form['password']
         # role = request.form['role']  # Role from registration form
-        hashed_password = generate_password_hash(password)
+        # hashed_password = generate_password_hash(password)
 
         # Save the user to MySQL database
         conn = mysql.connection
@@ -41,7 +41,7 @@ def register():
             INSERT INTO users (name, roll_number, email, `phone_number`, communication_preference, password)
             VALUES (%s, %s, %s, %s, %s, %s)
         """
-        cursor.execute(query, (name, rollNumber, email, phone, communication_preference, hashed_password))
+        cursor.execute(query, (name, rollNumber, email, phone, communication_preference, password))
         conn.commit()
         cursor.close()
 
@@ -74,7 +74,6 @@ def login():
                 'roll_number': user_data[2],
                 'phone_number': user_data[4]
             }
-            print(user_data[7])
             flash('Login successful!')
             # Redirect to the respective dashboard based on role
             if user_data[7] == 'admin':
@@ -87,10 +86,22 @@ def login():
             flash('Invalid credentials. Please try again.')
             return redirect('/')
 
+@app.route('/dashboard')
+def dashboard():
+    user_role = session['user']['role']
+    if user_role == 'student':
+        return redirect('/student_dashboard')
+    elif user_role == 'admin':
+        return redirect('/admin_dashboard')
+    elif user_role == 'club_leader':
+        return redirect('/leader_dashboard')
+    else:
+        return redirect(url_for('login'))
+
 @app.route('/student_dashboard')
 def student_dashboard():
-    user_id = session.get('id')
-    
+    user_id = session['user']['id']
+   
     conn = mysql.connection
     cursor = conn.cursor(dictionary=True)
     
@@ -120,7 +131,7 @@ def student_dashboard():
 
 @app.route('/join_club/<int:club_id>')
 def join_club(club_id):
-    user_id = session.get('id')
+    user_id = session['user']['id']
     
     conn = mysql.connection
     cursor = conn.cursor()
@@ -145,7 +156,6 @@ def join_club(club_id):
 # Admin dashboard route
 @app.route('/admin_dashboard')
 def admin_dashboard():
-    print(session['user']['role'])
     if session['user']['role'] == 'admin':
         return render_template('admin_dashboard.html', username=session['user']['name'])
     else:
@@ -155,8 +165,10 @@ def admin_dashboard():
 # Club Leader Dashboard: Display clubs managed by the leader
 @app.route('/leader_dashboard')
 def leader_dashboard():
-    
-    user_id = session.get('id')
+    if 'user' in session and session['user']['role'] != 'club_leader':
+        return "Access Denied", 403
+
+    user_id = session['user']['id']
     print(user_id)
     conn =  mysql.connection
     cursor = conn.cursor(dictionary=True)
@@ -167,10 +179,30 @@ def leader_dashboard():
         WHERE cl.user_id = %s
     """, (user_id,))
     clubs = cursor.fetchall()
-    print(clubs)
+    
+    
+    # Fetch clubs the student has already joined
+    cursor.execute("""
+        SELECT c.club_id, c.club_name, c.description
+        FROM Clubs c
+        JOIN club_members cm ON c.club_id = cm.club_id
+        WHERE cm.user_id = %s
+    """, (user_id,))
+    member_clubs = cursor.fetchall()
+    
+    # Fetch all clubs the student has not joined yet
+    cursor.execute("""
+        SELECT c.club_id, c.club_name, c.description
+        FROM Clubs c
+        WHERE c.club_id NOT IN (
+            SELECT cm.club_id FROM club_members cm WHERE cm.user_id = %s
+        )
+    """, (user_id,))
+    other_clubs = cursor.fetchall()
+
     cursor.close()
     conn.close()
-    return render_template('club_leader_dashboard.html', clubs=clubs)
+    return render_template('club_leader_dashboard.html', clubs=clubs, member_clubs = member_clubs, other_clubs=other_clubs)
 
 # Club Details for Club Leader
 @app.route('/club_details/<int:club_id>')
@@ -195,13 +227,18 @@ def club_details(club_id):
     cursor.execute("SELECT * FROM Events WHERE club_id = %s", (club_id,))
     events = cursor.fetchall()
     
+    cursor.execute("SELECT * FROM club_leaders WHERE club_id = %s", (club_id,))
+    clubLeader = cursor.fetchone()
+        
     cursor.close()
     conn.close()
-    return render_template('club_details.html', club=club, members=members, events=events, user=user)
+    return render_template('club_details.html', club=club, members=members, events=events, user=user, clubLeader=clubLeader)
 
 # Add event under club
 @app.route('/add_event/<int:club_id>', methods=['POST'])
 def add_event(club_id):
+    if 'user' in session and session['user']['role'] != 'club_leader':
+        return "Access Denied", 403
     event_name = request.form['event_name']
     description = request.form['description']
     event_date = request.form['event_date']
@@ -220,18 +257,20 @@ def add_event(club_id):
 # Display all clubs
 @app.route('/manage_clubs')
 def manage_clubs():
+
+    if 'user' in session and session['user']['role'] != 'admin':
+        return "Access Denied", 403
+
     conn = mysql.connection
     cursor = conn.cursor(dictionary=True)
     cursor.execute("""
-        SELECT c.club_id, c.club_name, c.description, 
-               GROUP_CONCAT(u.name SEPARATOR ',') AS leaders
+        SELECT c.club_id, c.club_name, c.description, u.id, u.name  AS leaders
         FROM Clubs c
         LEFT JOIN club_leaders cl ON c.club_id = cl.club_id
-        LEFT JOIN Users u ON cl.user_id = u.id
-        GROUP BY c.club_id
+        LEFT JOIN Users u ON cl.user_id = u.id        
     """)
     clubs = cursor.fetchall()
-    cursor.execute("SELECT id, name FROM Users WHERE role IN ('club_leader', 'student')")
+    cursor.execute("SELECT id, name FROM Users WHERE role IN ('student','club_leader')")
     users = cursor.fetchall()
     cursor.close()
     conn.close()
@@ -240,6 +279,9 @@ def manage_clubs():
 # Add a new club
 @app.route('/add_club', methods=['POST'])
 def add_club():
+    if 'user' in session and session['user']['role'] != 'admin':
+        return "Access Denied", 403
+
     club_name = request.form['club_name']
     description = request.form['description']
     leaders = request.form.getlist('club_leaders')
@@ -253,6 +295,7 @@ def add_club():
     # Assign leaders to the club
     for id  in leaders:
         cursor.execute("INSERT INTO club_leaders (club_id, user_id) VALUES (%s, %s)", (club_id, id))
+        cursor.execute("UPDATE users  set role = %s WHERE id = %s", ('club_leader',id))
 
 
     conn.commit()
@@ -264,6 +307,9 @@ def add_club():
 # Delete a club
 @app.route('/delete_club/<int:club_id>')
 def delete_club(club_id):
+    if 'user' in session and session['user']['role'] != 'admin':
+        return "Access Denied", 403
+
     conn = mysql.connection
     cursor = conn.cursor()
     cursor.execute("DELETE FROM Clubs WHERE club_id = %s", (club_id,))
@@ -274,15 +320,23 @@ def delete_club(club_id):
     return redirect(url_for('manage_clubs'))
 
 # Edit club details (additional screen can be created for editing)
-@app.route('/edit_club/<int:club_id>', methods=['GET', 'POST'])
-def edit_club(club_id):
+@app.route('/edit_club', methods=['GET', 'POST'])
+def edit_club():
+    if 'user' in session and session['user']['role'] != 'admin':
+        return "Access Denied", 403
     conn = mysql.connection
     cursor = conn.cursor(dictionary=True)
     if request.method == 'POST':
-        club_name = request.form['club_name']
+        club_id = request.form['club_id']
+        club_name = request.form['name']
         description = request.form['description']
+        club_leader_id = request.form['leader_id']
         cursor.execute("UPDATE Clubs SET club_name = %s, description = %s WHERE club_id = %s",
                        (club_name, description, club_id))
+        cursor.execute("UPDATE club_leaders SET user_id = %s  WHERE club_id = %s",
+                       (club_leader_id, club_id))
+        cursor.execute("UPDATE users SET role = %s  WHERE id = %s",
+                       ('club_leader', club_leader_id))                                             
         conn.commit()
         flash("Club updated successfully!")
         return redirect(url_for('manage_clubs'))
@@ -296,6 +350,9 @@ def edit_club(club_id):
 # Assign or remove a club leader
 @app.route('/assign_leader', methods=['POST'])
 def assign_leader():
+    if 'user' in session and session['user']['role'] != 'admin':
+        return "Access Denied", 403
+
     club_id = request.form['club_id']
     user_id = request.form['user_id']
     action = request.form['action']  # 'add' or 'remove'
@@ -312,6 +369,119 @@ def assign_leader():
     flash(f"Club leader {'added' if action == 'add' else 'removed'} successfully!")
     return redirect(url_for('manage_clubs'))
 
+@app.route('/manage_users')
+def manage_users():
+    if 'user' in session and session['user']['role'] == 'admin':  # Only admins can view this page
+        conn = mysql.connection
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT id, name,roll_number,email, phone_number,communication_preference,role FROM users")
+        users = cursor.fetchall()
+        cursor.close()
+        return render_template('manage_users.html', users=users)
+    return redirect(url_for('login'))
+
+@app.route('/add_user', methods=['POST'])
+def add_user():
+    if 'user' in session and session['user']['role'] == 'admin':  # Only admins can add users
+        name = request.form['name']
+        roll_number = request.form['roll_number']
+        email = request.form['email']
+        phone = request.form['phone']
+        communicationPreference = request.form['communicationPreference']
+        password = request.form['password']
+        role = request.form['role']
+        
+        cursor = mysql.connection.cursor()
+        cursor.execute("INSERT INTO users (name, roll_number, email, phone_number,communication_preference, password, role) VALUES (%s, %s, %s, %s,%s,%s, %s)", (name, roll_number, email, phone, communicationPreference, password, role))
+        mysql.connection.commit()
+        cursor.close()
+        
+        flash('User added successfully!')
+        return redirect(url_for('manage_users'))
+# Update user
+@app.route('/edit_user/<int:user_id>', methods=['GET', 'POST'])
+def edit_user(user_id):
+    if 'user' in session and session['user']['role'] == 'admin':  # Only admins can edit users
+        cursor = mysql.connection.cursor(dictionary=True)
+        
+        if request.method == 'POST':
+            name = request.form['name']
+            email = request.form['email']
+            phone = request.form['phone']
+            role = request.form['role']
+            
+            cursor.execute("UPDATE users SET name=%s, email=%s, phone_number=%s, role=%s WHERE id=%s", (name, email, phone, role, user_id))
+            mysql.connection.commit()
+            flash('User updated successfully!')
+            return redirect(url_for('manage_users'))
+        
+        # Pre-fill the form with user details
+        cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
+        user = cursor.fetchone()
+        cursor.close()
+        
+        return render_template('edit_user.html', user=user)
+    
+    return redirect(url_for('login'))
+
+# Delete user
+@app.route('/delete_user/<int:user_id>')
+def delete_user(user_id):
+    if 'user' in session and session['user']['role'] == 'admin':  # Only admins can delete users
+        cursor = mysql.connection.cursor()
+        cursor.execute("DELETE FROM users WHERE id = %s", (user_id,))
+        mysql.connection.commit()
+        cursor.close()
+        flash('User deleted successfully!')
+        return redirect(url_for('manage_users'))
+    
+    return redirect(url_for('login'))        
+
+@app.route('/leave_club', methods=['POST'])
+def leave_club():
+    if 'user' in session:
+        user_id = session['user']['id']
+        club_id = request.form['club_id']
+        print(user_id)
+        print(club_id)
+
+        cursor = mysql.connection.cursor()
+        cursor.execute("""
+            DELETE FROM club_members 
+            WHERE user_id=%s AND club_id=%s
+        """, (user_id, club_id))
+        mysql.connection.commit()
+        cursor.close()
+
+        flash('You have successfully left the club.', 'success')
+        return redirect('/dashboard')
+    return redirect('/login')
+
+@app.route('/update_profile', methods=['POST'])
+def update_profile():
+    if 'user' in session:
+        user_id = session['user']['id']
+        name = request.form['name']
+        email = request.form['email']
+        phone = request.form['phone']
+
+        cursor = mysql.connection.cursor()
+        cursor.execute("""
+            UPDATE users 
+            SET name=%s, email=%s, phone_number=%s 
+            WHERE id=%s
+        """, (name, email, phone, user_id))
+        mysql.connection.commit()
+        cursor.close()
+
+        # Update session data
+        session['user']['name'] = name
+        session['user']['email'] = email
+        session['user']['phone_number'] = phone
+
+        flash('Profile updated successfully', 'success')
+        return redirect('/dashboard')
+    return redirect('/login')
 
 # Route for logout
 @app.route('/logout')

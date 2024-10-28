@@ -4,8 +4,18 @@
     <meta charset="UTF-8">
     <title>Manage Clubs</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 </head>
 <body>
+    {% extends "base.html" %}
+    {% block title %}
+       Manage Clubs
+    {% endblock %}
+   
+    {% block content %}
+
 <div class="container">
     
     <div class="float-right mb-4">
@@ -33,7 +43,8 @@
                 <td>{{ club['description'] }}</td>
                 <td>{{ club['leaders'] }}</td>
                 <td>
-                    <button class="btn btn-primary btn-sm" onclick="editClub({{ club['club_id'] }})">Edit</button>
+                    <button type="button" class="btn btn-warning" data-toggle="modal" data-target="#editClubModal"
+                            onclick="populateClubDetails({{club['club_id'] }}, '{{ club['club_name'] }}', '{{ club['description'] }}','{{ club['leaders']}}')">Edit</button>
                     <button class="btn btn-danger btn-sm" onclick="deleteClub({{ club['club_id'] }})">Delete</button>
                 </td>
             </tr>
@@ -56,7 +67,7 @@
         </div>
         <div class="form-group">
             <label>Assign Leaders</label>
-            <select name="club_leaders" class="form-control" multiple required>
+            <select name="club_leaders" class="form-control" required>
                 {% for user in users %}
                 <option value="{{ user['id'] }}">{{ user['name'] }}</option>
                 {% endfor %}
@@ -67,6 +78,45 @@
     </form>
     {% endif %}
 </div>
+</div>
+
+<!-- Edit Club Modal -->
+<div class="modal fade" id="editClubModal" tabindex="-1" role="dialog" aria-labelledby="editClubModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editClubModalLabel">Edit Club</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="editClubForm" action="{{ url_for('edit_club') }}" method="POST">
+                    <input type="hidden" id="editClubId" name="club_id">
+
+                    <div class="form-group">
+                        <label for="editClubName">Club Name</label>
+                        <input type="text" class="form-control" id="editClubName" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editDescription">Club Description</label>
+                        <input type="text" class="form-control" id="editDescription" name="description" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="editClubLeader">Club Leader</label>
+                        <select class="form-control" id="editClubLeader" name="leader_id">
+                            {% for user in users %}
+                            <option value="{{ user['id']}}">{{ user['name'] }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </form>
+            </div>
+        </div>
+    </div>
 </div>
 <script>
     const createNewEventBtn = document.getElementById('createNewEventBtn');
@@ -84,6 +134,23 @@
             window.location.href = `/delete_club/${club_id}`;
         }
     }
+
+    function populateClubDetails(clubId, clubName, description, clubLeaderId) {
+        document.getElementById('editClubId').value = clubId;
+        document.getElementById('editClubName').value = clubName;
+        document.getElementById('editDescription').value = description;
+        
+
+        let leaderDropdown = document.getElementById('editClubLeader');
+        for (let i = 0; i < leaderDropdown.options.length; i++) {
+            if (leaderDropdown.options[i].value == clubLeaderId) {
+                leaderDropdown.selectedIndex = i;
+                break;
+            }
+        }        
+    }
+
 </script>
+{% endblock %}
 </body>
 </html>
