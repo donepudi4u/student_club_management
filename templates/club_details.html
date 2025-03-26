@@ -42,7 +42,7 @@
 
   <div class="container">
     <div class="float-right mb-4">
-      {% if user.role == 'club_leader' and session['user']['id'] == clubLeader['user_id'] %}
+      {% if user.role == 'admin' or (user.role == 'club_leader' and session['user']['id'] == clubLeader['user_id']) %}
         <button type="button" class="btn btn-primary" id="createNewEventBtn">Create New Event</button>
       {% endif %}
     </div>
@@ -56,7 +56,7 @@
           <th>Name</th>
           <th>Email</th>
           <th>Phone</th>
-          {% if session['user']['role'] ==  'club_leader' and session['user']['id'] == clubLeader['user_id'] %}
+          {% if user.role == 'admin' or (user.role == 'club_leader' and session['user']['id'] == clubLeader['user_id']) %}
             <th>Edit</th>
             <th>Delete</th>
           {% endif %}
@@ -68,9 +68,9 @@
             <td>{{ member.name }}</td>
             <td>{{ member.email }}</td>
             <td>{{ member.phone_number }}</td>
-            {% if session['user']['role'] == 'club_leader' and session['user']['id'] == clubLeader['user_id'] %}
+            {% if user.role == 'admin' or (user.role == 'club_leader' and session['user']['id'] == clubLeader['user_id']) %}
               <td><a href="/edit_member/{{ member.id }}">Edit</a></td>
-              <td><a href="/delete_member/{{ member.id }}">Delete</a></td>
+              <td><a href="/delete_member/{{ club.club_id }}/{{ member.id }}">Delete</a></td>
             {% endif %}
           </tr>
         {% endfor %}
@@ -84,7 +84,7 @@
           <th>Event Name</th>
           <th>Description</th>
           <th>Date</th>
-          {% if user.role == 'club_leader' and session['user']['id'] == clubLeader['user_id'] %}
+          {% if user.role == 'admin' or (user.role == 'club_leader' and session['user']['id'] == clubLeader['user_id']) %}
             <th>Edit</th>
             <th>Delete</th>
           {% endif %}
@@ -96,7 +96,7 @@
             <td>{{ event.event_name }}</td>
             <td>{{ event.description }}</td>
             <td>{{ event.event_date }}</td>
-            {% if session['user']['role'] ==  'club_leader' and session['user']['id'] == clubLeader['user_id'] %}
+            {% if user.role == 'admin' or (user.role == 'club_leader' and session['user']['id'] == clubLeader['user_id']) %}
               <td><a href="/edit_event/{{ event.id }}">Edit</a></td>
               <td><a href="/delete_event/{{ event.id }}">Delete</a></td>
             {% endif %}
@@ -106,7 +106,7 @@
     </table>
 
     <div id="newEventForm" style="display: none;">
-      {% if session['user']['role'] ==  'club_leader' and session['user']['id'] == clubLeader['user_id'] %}
+      {% if user.role == 'admin' or (user.role == 'club_leader' and session['user']['id'] == clubLeader['user_id']) %}
         <h4 class="mt-4">Create New Event</h4>
         <form action="/add_event/{{ club.club_id }}" method="POST">
           <div class="form-group">

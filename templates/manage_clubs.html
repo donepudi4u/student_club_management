@@ -43,6 +43,7 @@
                 <td>{{ club['description'] }}</td>
                 <td>{{ club['leaders'] }}</td>
                 <td>
+                    <button class="btn btn-danger btn-sm" onclick="viewClub({{ club['club_id'] }})">View</button>
                     <button type="button" class="btn btn-warning" data-toggle="modal" data-target="#editClubModal"
                             onclick="populateClubDetails({{club['club_id'] }}, '{{ club['club_name'] }}', '{{ club['description'] }}','{{ club['leaders']}}')">Edit</button>
                     <button class="btn btn-danger btn-sm" onclick="deleteClub({{ club['club_id'] }})">Delete</button>
@@ -125,6 +126,10 @@
     createNewEventBtn.addEventListener('click', function() {
       newEventForm.style.display = (newEventForm.style.display === 'none') ? 'block' : 'none';
     });
+
+    function viewClub(club_id) {
+        window.location.href = `/club_details/${club_id}`;
+    }
 
     function editClub(club_id) {
         window.location.href = `/edit_club/${club_id}`;

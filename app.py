@@ -216,7 +216,7 @@ def club_details(club_id):
     cursor.execute("SELECT * FROM clubs WHERE club_id = %s", (club_id,))
     club = cursor.fetchone()
     cursor.execute("""
-        SELECT u.name, u.email, u.phone_number
+        SELECT u.id, u.name, u.email, u.phone_number
         FROM club_members cm
         JOIN Users u ON cm.user_id = u.id
         WHERE cm.club_id = %s
@@ -237,7 +237,8 @@ def club_details(club_id):
 # Add event under club
 @app.route('/add_event/<int:club_id>', methods=['POST'])
 def add_event(club_id):
-    if 'user' in session and session['user']['role'] != 'club_leader':
+    print(session['user']['role'])
+    if 'user' in session and (session['user']['role'] != 'club_leader' and session['user']['role'] != 'admin') :
         return "Access Denied", 403
     event_name = request.form['event_name']
     description = request.form['description']
@@ -436,6 +437,19 @@ def delete_user(user_id):
         return redirect(url_for('manage_users'))
     
     return redirect(url_for('login'))        
+
+# Delete user
+@app.route('/delete_member/<int:club_id>/<int:user_id>')
+def delete_user_from_club(club_id,user_id):
+    if 'user' in session and (session['user']['role'] != 'club_leader' and session['user']['role'] != 'admin') :
+        return "Access Denied", 403
+    cursor = mysql.connection.cursor()
+    cursor.execute("DELETE FROM club_members WHERE club_id = %s and user_id = %s", (club_id,user_id,))
+    mysql.connection.commit()
+    cursor.close()
+    flash('User deleted from club successfully!')
+    return redirect(url_for('club_details', club_id=club_id))
+
 
 @app.route('/leave_club', methods=['POST'])
 def leave_club():
